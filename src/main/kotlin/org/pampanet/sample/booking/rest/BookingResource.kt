@@ -20,6 +20,7 @@ class BookingResource {
         return "Hello World"
     }
 
+    @Path("/between")
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     @Consumes(MediaType.APPLICATION_JSON)
@@ -45,6 +46,15 @@ class BookingResource {
         }
 
         return true
+    }
+
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun isOneAvailable(@QueryParam("date") date: String,
+                    @Context dslContext: DSLContext): Boolean {
+        val bookingManager = BookingService(dslContext)
+        return bookingManager.isAvailable(LocalDateTime.parse(date))
     }
 
     @POST

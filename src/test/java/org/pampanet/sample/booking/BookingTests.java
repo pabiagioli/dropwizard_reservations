@@ -14,6 +14,7 @@ import javax.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,6 +32,40 @@ public class BookingTests {
                     ResourceHelpers.resourceFilePath("dev.yml"));
 
     Client client = new JerseyClientBuilder(RULE.getEnvironment()).build("test client");
+
+    @Test
+    public void testAlreadyBooked(){
+        Reservations pablo = new Reservations(UUID.randomUUID(), new LocalDateTime [] {today.plusDays(2), today.plusDays(4)}, "Pablo");
+        Reservations fede = new Reservations(UUID.randomUUID(), new LocalDateTime [] {today.plusDays(4), today.plusDays(6)}, "Fede");
+        Reservations mom = new Reservations(UUID.randomUUID(), new LocalDateTime [] {today.plusDays(2), today.plusDays(5)}, "Mom");
+
+        List<UUID> ids = Stream.of(pablo, fede, mom)
+                .map(dto->Entity.entity(dto, MediaType.APPLICATION_JSON_TYPE))
+                .map(reservationsEntity -> client.target(
+                        String.format("http://localhost:%d/booking", RULE.getLocalPort()))
+                        .request().post(reservationsEntity))
+                .filter(Response::hasEntity)
+                .map(response -> response.readEntity(UUID.class))
+                .collect(Collectors.toList());
+
+        //Mom couldn't book the place
+        Assert.assertFalse(ids.contains(mom.getId()));
+
+        List<Boolean> availables = Stream.of(today.plusDays(2), today.plusDays(3), today.plusDays(15))
+                .parallel()
+                .map(localDateTime -> client.target(String.format("http://localhost:%d/booking", RULE.getLocalPort()))
+                        .queryParam("date", localDateTime.toString())
+                        .request()
+                        .get())
+                .filter(Response::hasEntity)
+                .map(response -> response.readEntity(Boolean.class))
+                .collect(Collectors.toList());
+
+        // (today + 2) and (today + 3) should not be available
+        Assert.assertTrue(availables.stream().filter(val-> !val).count() == 2);
+        Assert.assertTrue(availables.stream().filter(val-> val).count() == 1);
+
+    }
 
     @Test
     public void integrationTest() {

@@ -27,11 +27,10 @@ class BookingService (val dslContext: DSLContext) {
 
     fun makeReservation(reservations: org.pampanet.sample.booking.gen.tables.pojos.Reservations) : UUID? {
         try {
-            val id = UUID.randomUUID()
             dslContext.insertInto(Reservations.RESERVATIONS)
-                .set(dslContext.newRecord(Reservations.RESERVATIONS, reservations).setId(id))
+                .set(dslContext.newRecord(Reservations.RESERVATIONS, reservations))
                 .execute()
-            return id
+            return reservations.id
         }catch (e:Exception){
             e.printStackTrace()
         }
