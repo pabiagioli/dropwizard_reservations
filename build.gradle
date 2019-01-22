@@ -1,0 +1,126 @@
+import java.time.ZonedDateTime
+
+plugins {
+    id 'java'
+    id 'org.jetbrains.kotlin.jvm' version '1.3.11'
+    id 'application'
+    id 'com.github.johnrengelman.shadow' version '1.2.4'
+    id 'nu.studer.jooq' version '3.0.2'
+}
+
+group 'org.pampanet.sample'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    def dropwizard_version = "1.3.8"
+
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
+
+    jooqRuntime "org.postgresql:postgresql:42.2.5"
+    testImplementation "org.postgresql:postgresql:42.2.5"
+    implementation "io.reactivex.rxjava2:rxjava:2.2.5"
+
+    implementation "io.dropwizard:dropwizard-core:$dropwizard_version"
+
+    implementation "com.bendb.dropwizard:dropwizard-jooq:1.1.0-0"
+    implementation "org.jooq:jool-java-8:0.9.13"
+
+    testImplementation "junit:junit:4.12"
+    testImplementation "io.dropwizard:dropwizard-testing:$dropwizard_version"
+    testImplementation "io.dropwizard:dropwizard-client:$dropwizard_version"
+}
+
+compileKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+compileTestKotlin {
+    kotlinOptions.jvmTarget = "1.8"
+}
+
+mainClassName = 'org.pampanet.sample.booking.Application'
+
+run {
+    args = ['server', 'config/dev.yml']
+}
+
+shadowJar {
+    mergeServiceFiles()
+    exclude 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/*.SF'
+    manifest {
+        attributes 'Implementation-Title': rootProject.name
+        attributes 'Implementation-Version': rootProject.version
+        attributes 'Implementation-Vendor-Id': rootProject.group
+        attributes 'Build-Time': ZonedDateTime.now().toString()
+        attributes 'Built-By': InetAddress.localHost.hostName
+        attributes 'Created-By': 'Gradle ' + gradle.gradleVersion
+        attributes 'Main-Class': mainClassName
+    }
+    archiveName 'sample-dropwizard-rest-stub.jar'
+}
+
+jooq{
+    version = '3.11.9'
+    edition = 'OSS'
+    sample(sourceSets.main){
+        jdbc {
+            driver = 'org.postgresql.Driver'
+            url = 'jdbc:postgresql://localhost:5433/postgres'
+            user = 'postgres'
+            password = 'postgres'
+            properties {
+                property {
+                    key = 'ssl'
+                    value = 'false'
+                }
+            }
+        }
+        generator{
+            name = 'org.jooq.codegen.DefaultGenerator'
+
+            strategy {
+                name = 'org.jooq.codegen.DefaultGeneratorStrategy'
+                // ...
+            }
+
+            database {
+                name = 'org.jooq.meta.postgres.PostgresDatabase'
+                inputSchema = 'public'
+                customTypes{
+                    customType{
+                        name = "tsrange"
+                        type = "java.time.LocalDateTime[]"
+                        binding = "org.pampanet.sample.booking.config.TSRangeBinder"
+                    }
+                }
+                forcedTypes {
+                    forcedType{
+                        name = 'tsrange'
+                        expression = '.*'
+                        types = 'tsrange'
+                    }
+                }
+            }
+
+            generate {
+                relations = true
+                deprecated = false
+                records = true
+                immutablePojos = true
+                fluentSetters = true
+                javaTimeTypes = true
+
+                // ...
+            }
+
+            target{
+                packageName = "org.pampanet.sample.booking.gen"
+            }
+        }
+    }
+}

@@ -1,0 +1,45 @@
+server:
+  applicationConnectors:
+    - type: http
+      port: 8080
+
+logging:
+  level: DEBUG
+
+  appenders:
+    - type: file
+      threshold: INFO
+      currentLogFilename: ./logs/example.log
+      archivedLogFilenamePattern: ./logs/example-%d.log.gz
+      archivedFileCount: 5
+      timeZone: UTC
+
+    - type: file
+      threshold: DEBUG
+      currentLogFilename: ./logs/debug.log
+      archivedLogFilenamePattern: ./logs/debug-%d{yyyy-MM-dd-hh}.log.gz
+      archivedFileCount: 6
+      timeZone: UTC
+
+    - type: console
+      target: stdout
+
+dbFactory:
+  driverClass: org.postgresql.Driver
+  user: postgres
+  password: postgres
+  url: jdbc:postgresql://localhost:5433/postgres
+
+jooqFactory:
+  dialect: POSTGRES
+  logExecutedSql: yes
+  renderSchema: yes
+  renderNameStyle: QUOTED
+  renderKeywordStyle: LOWER
+  renderFormatted: no
+  paramType: INDEXED
+  statementType: PREPARED_STATEMENT
+  executeLogging: no
+  executeWithOptimisticLocking: no
+  attachRecords: yes
+  updatablePrimaryKeys: no
