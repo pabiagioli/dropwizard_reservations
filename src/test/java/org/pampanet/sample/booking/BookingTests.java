@@ -14,7 +14,6 @@ import javax.ws.rs.core.Response;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -25,13 +24,17 @@ public class BookingTests {
     LocalDateTime today = LocalDate.now().atStartOfDay();
     LocalDateTime monthFromNow = today.plusMonths(1);
 
+    private static Client client;
 
     @ClassRule
     public static final DropwizardAppRule<BookingConfig> RULE =
             new DropwizardAppRule<>(Application.class,
                     ResourceHelpers.resourceFilePath("dev.yml"));
 
-    Client client = new JerseyClientBuilder(RULE.getEnvironment()).build("test client");
+    @BeforeClass
+    public static void setup(){
+        client = new JerseyClientBuilder(RULE.getEnvironment()).build("test client");
+    }
 
     @Test
     public void testAlreadyBooked(){
@@ -91,7 +94,9 @@ public class BookingTests {
     @Before
     @After
     public void tearDown(){
-        client.target(String.format("http://localhost:%d/booking", RULE.getLocalPort())).request().delete();
+        client.target(String.format("http://localhost:%d/booking", RULE.getLocalPort()))
+                .request()
+                .delete();
     }
 
 }
